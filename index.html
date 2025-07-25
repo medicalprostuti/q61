@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "ডায়োড বিমুখী বায়াস (reversed biased) হলে নিঃশেষিত স্তর (depletion layer) -",
+          options: {
+            a: "একই থাকে",
+            b: "বৃদ্ধি পাবে",
+            c: "হ্রাস পায়",
+            d: "বিলুপ্ত হয়",
+          },
+          correct: "b",
+          explanation:
+            "ডায়োডকে বিমুখী বায়াস করলে, বাইরের ভোল্টেজ নিঃশেষিত স্তরের বিভব প্রাচীরের সাথে যোগ হয়, ফলে নিঃশেষিত স্তরের প্রস্থ বৃদ্ধি পায় এবং এটি একটি বড় রোধের মতো আচরণ করে।",
+        },
+        {
+          id: 2,
+          question: "নিচের কোনটি এসি-কে ডিসি-তে রূপান্তরিত করে?",
+          options: {
+            a: "ডায়োড (Diode)",
+            b: "ভোল্টমিটার (Voltmeter)",
+            c: "অ্যামিটার (Ammeter)",
+            d: "ট্রানজিস্টর (Transistor)",
+          },
+          correct: "a",
+          explanation:
+            "ডায়োড রেকটিফায়ার সার্কিটে ব্যবহৃত হয় এসি (Alternating Current) প্রবাহকে ডিসি (Direct Current) প্রবাহে রূপান্তরিত করতে। এটি একমুখী পরিবাহিতার নীতিতে কাজ করে।",
+        },
+        {
+          id: 3,
+          question: "ডায়োড ব্যবহৃত হয় নিচের কোন যন্ত্রটিতে?",
+          options: {
+            a: "টেলিভিশনে",
+            b: "ক্যামেরায়",
+            c: "টেপরেকর্ডারে",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "টেলিভিশনে পাওয়ার সাপ্লাই, সিগনাল ডিটেকশন এবং অন্যান্য ইলেকট্রনিক সার্কিটে ডায়োড ব্যাপকভাবে ব্যবহৃত হয়। এটি রেকটিফায়ার হিসেবে গুরুত্বপূর্ণ ভূমিকা পালন করে।",
+        },
+        {
+          id: 4,
+          question: "নিম্নের কোনটি ইলেকট্রনিক পদার্থের জন্য সঠিক?",
+          options: {
+            a: "জার্মেনিয়াম একটি উন্নত পরিবাহক",
+            b: "হীরক একটি দুর্বল অন্তরক",
+            c: "সৌর কোষ হলো সিলিকন দিয়ে তৈরি আলোক সংবেদী p-n জাংশন",
+            d: "কার্বন একটি বহির্জাত অর্ধপরিবাহক",
+          },
+          correct: "c",
+          explanation:
+            "সৌর কোষ মূলত সিলিকন বা অন্যান্য অর্ধপরিবাহী দ্বারা তৈরি p-n জাংশন যা আলোক শক্তিকে বিদ্যুৎ শক্তিতে রূপান্তরিত করে। জার্মেনিয়াম একটি অর্ধপরিবাহী, উন্নত পরিবাহক নয়। হীরক একটি চমৎকার অন্তরক, দুর্বল নয়। কার্বন (যেমন গ্রাফাইট) পরিবাহী হতে পারে, কিন্তু একটি মৌলিক পদার্থ হিসাবে এটি সরাসরি বহির্জাত অর্ধপরিবাহক নয়; এটি ডোপিংয়ের মাধ্যমে অর্ধপরিবাহক হতে পারে কিন্তু কার্বন নিজেই একটি 'বহির্জাত অর্ধপরিবাহক' নয়।",
+        },
+        {
+          id: 5,
+          question: "জাংশন ডায়োড সাধারণত কি কাজে ব্যবহার করা হয়?",
+          options: {
+            a: "রেকটিফায়ার হিসেবে",
+            b: "সুইচ হিসেবে",
+            c: "বিবর্ধক হিসেবে",
+            d: "স্পন্দক হিসেবে",
+          },
+          correct: "a",
+          explanation:
+            "জাংশন ডায়োডের প্রধান কাজ হলো রেকটিফিকেশন, অর্থাৎ এসি প্রবাহকে ডিসি প্রবাহে রূপান্তর করা। এটি একমুখী পরিবাহিতার কারণে সম্ভব।",
+        },
+        {
+          id: 6,
+          question: "দিক পরিবর্তী প্রবাহকে একমুখী প্রবাহে রূপান্তরিত করে—",
+          options: {
+            a: "ডায়োড",
+            b: "ট্রানজিস্টর",
+            c: "রেকটিফায়ার",
+            d: "অ্যামপ্লিফায়ার",
+          },
+          correct: "c",
+          explanation:
+            "রেকটিফায়ার হলো এমন একটি সার্কিট যা ডায়োড ব্যবহার করে দিক পরিবর্তী প্রবাহ (AC) কে একমুখী প্রবাহ (DC) তে রূপান্তরিত করে।",
+        },
+        {
+          id: 7,
+          question: "একটি p-n সংযোগকে বিপরীত বায়াসে রাখলে—",
+          options: {
+            a: "কোনো প্রবাহ হয় না",
+            b: "নিঃশেষিত অঞ্চলের বেধ বাড়ে",
+            c: "নিঃশেষিত অঞ্চলের বেধ কমে",
+            d: "বিভব প্রাচীরের উচ্চতা কমে",
+          },
+          correct: "b",
+          explanation:
+            "বিপরীত বায়াসে (reverse bias) p-n জাংশনের নিঃশেষিত অঞ্চলের প্রস্থ বৃদ্ধি পায়, এবং বিভব প্রাচীরের উচ্চতাও বৃদ্ধি পায়। ফলে খুব কম প্রবাহ (লিকেজ কারেন্ট) হয়।",
+        },
+        {
+          id: 8,
+          question: "বিমুখী বায়াস প্রদান করা হয় কোন জাংশনে?",
+          options: {
+            a: "নিঃসারক ও সংগ্রাহক",
+            b: "পীঠ ও নিঃসারক",
+            c: "পীঠ ও সংগ্রাহক",
+            d: "সবকটি",
+          },
+          correct: "c",
+          explanation:
+            "সাধারণত একটি NPN ট্রানজিস্টরের বেস-এমিটার জাংশন (পীঠ ও নিঃসারক) ফরওয়ার্ড বায়াস করা হয় এবং বেস-কালেক্টর জাংশন (পীঠ ও সংগ্রাহক) রিভার্স বায়াস করা হয় যাতে এটি বিবর্ধক হিসেবে কাজ করতে পারে।",
+        },
+        {
+          id: 9,
+          question: "ঝোঁক প্রদানকারী একটি p-n জাংশনের নিঃশেষিত অঞ্চলে থাকে—",
+          options: {
+            a: "কেবলমাত্র ইলেকট্রন",
+            b: "কেবলমাত্র হোল",
+            c: "ইলেকট্রন ও হোল উভয়ই",
+            d: "কেবলমাত্র আয়ন",
+          },
+          correct: "d",
+          explanation:
+            "p-n জাংশনের নিঃশেষিত অঞ্চল (depletion layer) হলো এমন একটি অঞ্চল যেখানে মুক্ত আধান বাহক (ইলেকট্রন ও হোল) থাকে না, বরং স্থির দাতা এবং গ্রহণকারী আয়ন বিদ্যমান থাকে।",
+        },
+        {
+          id: 10,
+          question: "বায়াসিং-এর ক্ষেত্রে ডিপ্লেশন স্তরের জন্য কোনটি সঠিক?",
+          options: {
+            a: "ফরোয়ার্ড বায়াসে বৃদ্ধি পায়",
+            b: "রিভার্স বায়াসে হ্রাস পায়",
+            c: "ফরোয়ার্ড ও রিভার্স বায়াসে সমান থাকে",
+            d: "ফরোয়ার্ড বায়াসে হ্রাস পায়",
+          },
+          correct: "d",
+          explanation:
+            "ফরোয়ার্ড বায়াসে (সম্মুখী বায়াস) p-n জাংশনের বিভব প্রাচীরের উচ্চতা কমে এবং নিঃশেষিত স্তরের প্রস্থ হ্রাস পায়। রিভার্স বায়াসে এর বিপরীত ঘটে।",
+        },
+        {
+          id: 11,
+          question: "p-n জাংশন সংযোগস্থলে ডিপ্লেশন স্তরের সৃষ্টির কারণ হলো—",
+          options: {
+            a: "অপদ্রব্য আয়ন-এর স্থানান্তর",
+            b: "আধান বাহকের ব্যাপন",
+            c: "ইলেকট্রনের তাড়ন",
+            d: "হোলের তাড়ন",
+          },
+          correct: "b",
+          explanation:
+            "p-n জাংশন তৈরির সময়, p-প্রান্ত থেকে হোল এবং n-প্রান্ত থেকে ইলেকট্রন একে অপরের দিকে ব্যাপন (diffusion) করে। এই ব্যাপনের ফলে একটি আধানমুক্ত অঞ্চল তৈরি হয়, যাকে নিঃশেষিত স্তর বা ডিপ্লেশন স্তর বলে।",
+        },
+        {
+          id: 12,
+          question:
+            "ক্রিকেট খেলায় ব্যবহৃত ইলেকট্রনিক স্কোরবোর্ড ডিসপ্লে সাধারণত কী ধরনের অর্ধপরিবাহী দিয়ে তৈরি?",
+          options: {
+            a: "ট্রানজিস্টর",
+            b: "আলো নিঃসারক ডায়োড",
+            c: "সৌরকোষ",
+            d: "ফিল্ড ইফেক্ট ট্রানজিস্টর",
+          },
+          correct: "b",
+          explanation:
+            "ক্রিকেট স্কোরবোর্ড বা অন্যান্য ডিজিটাল ডিসপ্লেতে LED (Light Emitting Diode) ব্যবহার করা হয়, যা আলো নিঃসারক ডায়োড নামেও পরিচিত। LED হলো এক ধরনের অর্ধপরিবাহী ডিভাইস যা বিদ্যুৎ প্রবাহের ফলে আলো উৎপন্ন করে।",
+        },
+        {
+          id: 13,
+          question: "অর্ধপরিবাহী ডায়োডকে সম্মুখী বায়াস করলে নিঃশেষিত স্তর—",
+          options: {
+            a: "হ্রাস পায়",
+            b: "একই থাকে",
+            c: "বৃদ্ধি পায়",
+            d: "বিলুপ্ত হয়",
+          },
+          correct: "a",
+          explanation:
+            "সম্মুখী বায়াসে (forward bias) ডায়োডের বিভব প্রাচীরের উচ্চতা কমে এবং নিঃশেষিত স্তরের প্রস্থ হ্রাস পায়, ফলে এটি সহজে বিদ্যুৎ পরিবহন করতে পারে।",
+        },
+        {
+          id: 14,
+          question:
+            "ব্রিজ রেকটিফায়ারে পরিবর্তী প্রবাহ (AC)-কে একমুখী DC করার জন্য লোডের সাথে সমান্তরাল সমবায়ে যে ধারক ব্যবহার করা হয় সেটির কাজ—",
+          options: {
+            a: "AC প্রবাহ একমুখী করা",
+            b: "DC প্রবাহ মসৃণ করা",
+            c: "সার্কিট রক্ষা করা",
+            d: "AC প্রবাহ বৃদ্ধি করা",
+          },
+          correct: "b",
+          explanation:
+            "রেকটিফায়ার থেকে প্রাপ্ত DC প্রবাহ স্পন্দিত (pulsating) হয়। লোডের সাথে সমান্তরাল সমবায়ে একটি ধারক (capacitor) ব্যবহার করে এই স্পন্দন দূর করা হয় এবং DC প্রবাহকে মসৃণ (smooth) করা হয়। একে ফিল্টার সার্কিট বলে।",
+        },
+        {
+          id: 15,
+          question: "একটি পূর্ণ তরঙ্গ একমুখীকারকের আউটপুট হলো—",
+          options: {
+            a: "একটি পরিবর্তী ভোল্টেজ",
+            b: "একটি সমবর্তী ভোল্টেজ",
+            c: "শূন্য",
+            d: "স্পন্দিত একমুখী ভোল্টেজ",
+          },
+          correct: "d",
+          explanation:
+            "একটি পূর্ণ তরঙ্গ একমুখীকারক (full-wave rectifier) AC ইনপুটের উভয় অর্ধচক্রকে একমুখী করে। ফলে আউটপুটে একটি স্পন্দিত (pulsating) একমুখী ভোল্টেজ পাওয়া যায়, যা সম্পূর্ণভাবে স্থির DC নয়।",
+        },
+        {
+          id: 16,
+          question:
+            "পূর্ণতরঙ্গ একমুখীকরণ ব্রিজ বর্তনীতে একটি ডায়োড অপসারণ করা হলে আউটপুট সংকেত কীরূপ হবে?",
+          options: {
+            a: "অপরিবর্তিত থাকবে",
+            b: "শুধুমাত্র ধনাত্মক অর্ধতরঙ্গ পাওয়া যাবে",
+            c: "শুধুমাত্র ঋণাত্মক অর্ধতরঙ্গ পাওয়া যাবে",
+            d: "ধনাত্মক অথবা ঋণাত্মক অর্ধতরঙ্গ পাওয়া যাবে",
+          },
+          correct: "d",
+          explanation:
+            "একটি ব্রিজ রেকটিফায়ারে চারটি ডায়োড থাকে। যদি একটি ডায়োড অপসারণ করা হয়, তাহলে বর্তনীটি আংশিকভাবে কাজ করবে, এবং আউটপুট সংকেত ত্রুটিপূর্ণ হবে। এটি একটি অর্ধ-তরঙ্গ রেকটিফায়ারের মতো আচরণ করতে পারে, যেখানে হয় ধনাত্মক অথবা ঋণাত্মক অর্ধতরঙ্গ পাওয়া যাবে, অথবা কোনো তরঙ্গই পাওয়া যাবে না, নির্ভর করে কোন ডায়োডটি সরানো হয়েছে এবং বর্তনীর নির্দিষ্ট সংযোগের উপর।",
+        },
+        {
+          id: 17,
+          question:
+            "একটি p-n ডায়োডকে বিপরীত বায়াসে রাখা হয়েছে। একটি ওম-মিটার দ্বারা রোধ মাপলে দেখা যাবে যে রোধটি—",
+          options: {
+            a: "শূন্য",
+            b: "অত্যন্ত কম",
+            c: "অত্যন্ত বেশি",
+            d: "অসীম",
+          },
+          correct: "c",
+          explanation:
+            "বিপরীত বায়াসে p-n ডায়োডের রোধ অত্যন্ত বেশি হয়। আদর্শ ডায়োডের ক্ষেত্রে এটি অসীম ধরা হয়, তবে বাস্তবে এটি খুব উচ্চ মানের হয়, যা একটি ওম-মিটার দ্বারা পরিমাপ করা যায়।",
+        },
+        {
+          id: 18,
+          question: "বিপরীত ঝোঁকের বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "মিলি অ্যাম্পিয়ারে তড়িৎপ্রবাহ পাওয়া যায়",
+            b: "মাইক্রো অ্যাম্পিয়ারে তড়িৎপ্রবাহ পাওয়া যায়",
+            c: "নিঃশোষিত অঞ্চলের পুরুত্ব ক্রমশ হ্রাস পায়",
+            d: "সামান্য বিভব পার্থক্যে তড়িৎ প্রবাহমাত্রার উল্লেখযোগ্য পরিবর্তন হয়",
+          },
+          correct: "b",
+          explanation:
+            "বিপরীত ঝোঁকে (reverse bias) p-n জাংশনের মধ্য দিয়ে খুব কম পরিমাণে তড়িৎ প্রবাহ হয়, যাকে লিকেজ কারেন্ট বা বিপরীত সম্পৃক্ত প্রবাহ বলে। এই প্রবাহ সাধারণত মাইক্রো অ্যাম্পিয়ার (μA) পরিসরে থাকে। নিঃশোষিত অঞ্চলের পুরুত্ব বৃদ্ধি পায় এবং সামান্য বিভব পার্থক্যে উল্লেখযোগ্য পরিবর্তন হয় না।",
+        },
+        {
+          id: 19,
+          question:
+            "একটি ডায়োড রিভার্স বায়াসে যুক্ত হলে ↑ চিহ্ন দ্বারা বৃদ্ধি এবং ↓ চিহ্ন দ্বারা হ্রাস নির্দেশিত হলে নিচের কোনটি সঠিক?",
+          options: {
+            a: "ডিপ্লেশন স্তর ↑, বিভব প্রাচীর ↑",
+            b: "ডিপ্লেশন স্তর ↑, বিভব প্রাচীর ↓",
+            c: "ডিপ্লেশন স্তর ↓, বিভব প্রাচীর ↓",
+            d: "ডিপ্লেশন স্তর ↓, বিভব প্রাচীর ↑",
+          },
+          correct: "a",
+          explanation:
+            "রিভার্স বায়াসে ডায়োডের ডিপ্লেশন স্তরের প্রস্থ বৃদ্ধি পায় এবং বিভব প্রাচীরের উচ্চতাও বৃদ্ধি পায়।",
+        },
+        {
+          id: 20,
+          question: "অর্ধপরিবাহী ডায়োডকে কী বলা হয়?",
+          options: {
+            a: "রেকটিফায়ার",
+            b: "ট্রানজিস্টর",
+            c: "অ্যামপ্লিফায়ার",
+            d: "FET",
+          },
+          correct: "a",
+          explanation:
+            "অর্ধপরিবাহী ডায়োডের প্রধান ব্যবহার হলো রেকটিফিকেশন, অর্থাৎ এসিকে ডিসিতে রূপান্তর করা। তাই এটি রেকটিফায়ার নামেও পরিচিত।",
+        },
+        {
+          id: 21,
+          question: "p-n জাংশন অন্তরক হিসেবে কাজ করে যখন তা সংযুক্ত করা হয়—",
+          options: {
+            a: "এসি উৎসে",
+            b: "সম্মুখী ঝোঁকে",
+            c: "বিমুখী ঝোঁকে",
+            d: "এসি উৎসে অথবা বিমুখী ঝোঁকে",
+          },
+          correct: "c",
+          explanation:
+            "p-n জাংশনকে বিমুখী ঝোঁকে (reverse bias) রাখলে এর রোধ অত্যন্ত বেশি হয় এবং এটি খুব কম বিদ্যুৎ পরিবহন করে, ফলে এটি অন্তরকের মতো আচরণ করে।",
+        },
+        {
+          id: 22,
+          question: "p-n জাংশন সম্মুখী ঝোঁকে থাকলে এর রোধ কেমন হয়?",
+          options: {
+            a: "শূন্য",
+            b: "নিম্ন",
+            c: "উচ্চ",
+            d: "অসীম",
+          },
+          correct: "b",
+          explanation:
+            "p-n জাংশনকে সম্মুখী ঝোঁকে (forward bias) রাখলে এর রোধ অত্যন্ত কম হয়, ফলে এটি সহজে বিদ্যুৎ পরিবহন করতে পারে।",
+        },
+        {
+          id: 23,
+          question: "জাংশন ডায়োডে বিমুখী ঝোঁক কী করে?",
+          options: {
+            a: "বিভব বাঁধা হ্রাস করে",
+            b: "বিভব বাঁধা বৃদ্ধি করে",
+            c: "লঘিষ্ঠ আধান বাহক বৃদ্ধি করে",
+            d: "গরিষ্ঠ আধান বাহক বৃদ্ধি করে",
+          },
+          correct: "b",
+          explanation:
+            "বিমুখী ঝোঁকে (reverse bias) জাংশন ডায়োডের বিভব প্রাচীর (potential barrier) এর উচ্চতা বৃদ্ধি পায়, যার ফলে আধান বাহকদের জন্য জাংশন অতিক্রম করা কঠিন হয়ে পড়ে এবং প্রবাহ প্রায় বন্ধ থাকে।",
+        },
+        {
+          id: 24,
+          question: "p-n জাংশন কখন সম্মুখী ঝোঁকে থাকে?",
+          options: {
+            a: "যখন জাংশনে বিভব পার্থক্য প্রয়োগ করা হয় না",
+            b: "যখন p-টাইপ ব্যাটারির ধনাত্মক প্রান্তে এবং n-টাইপ ঋণাত্মক প্রান্তে সংযোগ দেওয়া হয়",
+            c: "যখন p-টাইপ ব্যাটারির ঋণাত্মক প্রান্তে এবং n-টাইপ ধনাত্মক প্রান্তে সংযোগ দেওয়া হয়",
+            d: "যখন জাংশনে চৌম্বকক্ষেত্র প্রয়োগ করা হয়",
+          },
+          correct: "b",
+          explanation:
+            "p-n জাংশন সম্মুখী ঝোঁকে (forward bias) থাকে যখন p-প্রান্তকে ব্যাটারির ধনাত্মক প্রান্তের সাথে এবং n-প্রান্তকে ঋণাত্মক প্রান্তের সাথে সংযুক্ত করা হয়।",
+        },
+        {
+          id: 25,
+          question: "p-n জাংশন কখন বিমুখী ঝোঁকে থাকে?",
+          options: {
+            a: "যখন জাংশনে বিভব পার্থক্য প্রয়োগ করা হয় না",
+            b: "যখন p-টাইপ ব্যাটারির ধনাত্মক প্রান্তে এবং n-টাইপ ঋণাত্মক প্রান্তে সংযোগ দেওয়া হয়",
+            c: "যখন p-টাইপ ব্যাটারির ঋণাত্মক প্রান্তে এবং n-টাইপ ধনাত্মক প্রান্তে সংযোগ দেওয়া হয়",
+            d: "যখন জাংশনে চৌম্বকক্ষেত্র প্রয়োগ করা হয়",
+          },
+          correct: "c",
+          explanation:
+            "p-n জাংশন বিমুখী ঝোঁকে (reverse bias) থাকে যখন p-প্রান্তকে ব্যাটারির ঋণাত্মক প্রান্তের সাথে এবং n-প্রান্তকে ধনাত্মক প্রান্তের সাথে সংযুক্ত করা হয়।",
+        },
+        {
+          id: 26,
+          question: "রেকটিফায়ার হিসেবে ডায়োড রূপান্তর করে—",
+          options: {
+            a: "এসি থেকে ডিসি",
+            b: "অস্থির ডিসি থেকে স্থির ডিসি",
+            c: "ডিসি থেকে এসি",
+            d: "উচ্চ বিভব থেকে নিম্ন বিভব",
+          },
+          correct: "a",
+          explanation:
+            "রেকটিফায়ারের মূল কাজ হলো অল্টারনেটিং কারেন্ট (AC) কে ডাইরেক্ট কারেন্ট (DC) এ রূপান্তর করা।",
+        },
+        {
+          id: 27,
+          question:
+            "বিমুখী ঝোঁকে ভোল্টেজ ক্রমশ বাড়তে থাকলে একটি বিশেষ ভোল্টেজে প্রবাহমাত্রা হঠাৎ খুব বেড়ে যায়, এই ভোল্টেজকে কী বলা হয়?",
+          options: {
+            a: "হল ভোল্টেজ",
+            b: "লরেঞ্জ ভোল্টেজ",
+            c: "জেনার ভোল্টেজ",
+            d: "কোনোটি নয়",
+          },
+          correct: "c",
+          explanation:
+            "বিমুখী বায়াসে একটি নির্দিষ্ট ভোল্টেজে পৌঁছালে (জেনার ভোল্টেজ বা ব্রেকডাউন ভোল্টেজ) ডায়োডের মধ্য দিয়ে হঠাৎ করে একটি বৃহৎ প্রবাহ শুরু হয়। জেনার ডায়োড এই নীতিতে কাজ করে।",
+        },
+        {
+          id: 28,
+          question: "LED ডায়োড কী ধরনের আলো নিঃসরণ করে?",
+          options: {
+            a: "X-ray",
+            b: "Ultraviolet light",
+            c: "Visible light",
+            d: "Radiowave",
+          },
+          correct: "c",
+          explanation:
+            "LED (Light Emitting Diode) ডায়োড সাধারণত দৃশ্যমান আলো (Visible light) নিঃসরণ করে। কিছু বিশেষ LED অতিবেগুনি বা ইনফ্রারেড আলোও তৈরি করতে পারে, তবে সাধারণ LED এর জন্য দৃশ্যমান আলোই সঠিক।",
+        },
+        {
+          id: 29,
+          question: "বর্তনীর I বনাম V লেখচিত্রের ঢাল নির্দেশ করে—",
+          options: {
+            a: "রোধ",
+            b: "তড়িৎ পরিবাহিতা",
+            c: "আপেক্ষিক রোধ",
+            d: "তড়িৎ প্রাবল্য",
+          },
+          correct: "b",
+          explanation:
+            "ওহমের সূত্রানুসারে V = IR, সুতরাং I = V/R। I বনাম V লেখচিত্রের ঢাল হলো ΔI/ΔV, যা 1/R এর সমান। 1/R হলো পরিবাহিতা (conductance)।",
+        },
+        {
+          id: 30,
+          question: "p-n জাংশনে সম্মুখ ঝোঁক করতে—",
+          options: {
+            a: "p-প্রান্তে ধনাত্মক ভোল্টেজ প্রয়োগ করতে হয়",
+            b: "n-প্রান্তে ধনাত্মক ভoltage প্রয়োগ করতে হয়",
+            c: "p-প্রান্তে ঋণাত্মক ভোল্টেজ প্রয়োগ করতে হয়",
+            d: "উপরের কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "p-n জাংশনকে সম্মুখ ঝোঁকে (forward bias) করতে, p-প্রান্তকে ব্যাটারির ধনাত্মক প্রান্তের সাথে এবং n-প্রান্তকে ঋণাত্মক প্রান্তের সাথে সংযুক্ত করতে হয়।",
+        },
+        {
+          id: 31,
+          question: "রেকটিফায়ার হিসেবে ব্যবহৃত হয়—",
+          options: {
+            a: "ট্রানজিস্টর",
+            b: "IC",
+            c: "FET",
+            d: "ডায়োড",
+          },
+          correct: "d",
+          explanation:
+            "ডায়োড তার একমুখী পরিবাহিতার বৈশিষ্ট্যের জন্য রেকটিফায়ার সার্কিটের মূল উপাদান হিসেবে ব্যবহৃত হয়।",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
